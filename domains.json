@@ -1,0 +1,12 @@
+{
+  "domains": [
+    {
+      "name": "example.tj",
+      "expire": "2024-01-03"
+    },
+    {
+      "name": "example.kz",
+      "expire": "2024-07-11"
+    }
+  ]
+}

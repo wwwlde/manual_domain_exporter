@@ -44,19 +44,16 @@ var (
 			Name: "domain_expiration",
 			Help: "Days until the WHOIS record states this domain will expire",
 		},
-		[]string{"domain"},
-	)
-	manualExpiration = prometheus.NewGaugeVec(
-		prometheus.GaugeOpts{
-			Name: "domain_manual_expiration",
-			Help: "That the domain expiration date was set manualy",
+		[]string{
+			"domain",
+			"manual",
 		},
-		[]string{"domain"},
 	)
+
 	// we initialize our Domains array
 	domains Domains
 
-	version = "0.0.1"
+	version = "0.0.2"
 )
 
 func main() {
@@ -65,10 +62,9 @@ func main() {
 	kingpin.HelpFlag.Short('h')
 	kingpin.Parse()
 	logger := promlog.New(promlogConfig)
-	_ = level.Info(logger).Log("msg", "Starting domain_exporter", "version", version)
+	_ = level.Info(logger).Log("msg", "Starting manual_domain_exporter", "version", version)
 
 	prometheus.Register(domainExpiration)
-	prometheus.Register(manualExpiration)
 
 	filename, err := filepath.Abs(*configFile)
 	if err != nil {
@@ -90,7 +86,7 @@ func main() {
 		go func() {
 			for {
 				for i := 0; i < len(domains.Domains); i++ {
-					err = lookup(domains.Domains[i], domainExpiration, manualExpiration, logger)
+					err = lookup(domains.Domains[i], domainExpiration, logger)
 					if err != nil {
 						_ = level.Warn(logger).Log("warn", err)
 					}
@@ -106,9 +102,9 @@ func main() {
 		fmt.Fprintf(
 			w, `
 			<html>
-			<head><title>Domain Exporter</title></head>
+			<head><title>Manual Domain Exporter</title></head>
 			<body>
-				<h1>Domain Exporter</h1>
+				<h1>Manual Domain Exporter</h1>
 				<h2>Denys Lemeshko</h2>
 				<p><a href="/metrics">Metrics</a></p>
 			</body>
@@ -123,14 +119,13 @@ func main() {
 	}
 }
 
-func lookup(domain Domain, handler *prometheus.GaugeVec, manualExpiration *prometheus.GaugeVec, logger log.Logger) error {
+func lookup(domain Domain, handler *prometheus.GaugeVec, logger log.Logger) error {
 
 	for _, format := range formats {
 		if date, err := time.Parse(format, strings.TrimSpace(domain.Expire)); err == nil {
 			days := math.Floor(time.Until(date).Hours() / 24)
 			_ = level.Info(logger).Log("domain:", domain.Name, "days", days, "date", date)
-			handler.WithLabelValues(domain.Name).Set(days)
-			manualExpiration.WithLabelValues(domain.Name).Set(1)
+			handler.WithLabelValues(domain.Name, "1").Set(days)
 			return nil
 		}
 	}

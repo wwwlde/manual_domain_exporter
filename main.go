@@ -3,20 +3,20 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
-	"os"
-	"net/http"
-	"github.com/prometheus/client_golang/prometheus"
-	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"strings"
-	"time"
 	"github.com/go-kit/kit/log"
 	"github.com/go-kit/kit/log/level"
-	"math"
-	"gopkg.in/alecthomas/kingpin.v2"
-	"path/filepath"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/prometheus/common/promlog"
 	"github.com/prometheus/common/promlog/flag"
+	"gopkg.in/alecthomas/kingpin.v2"
+	"io/ioutil"
+	"math"
+	"net/http"
+	"os"
+	"path/filepath"
+	"strings"
+	"time"
 )
 
 // Domains struct which contains an array of domains
@@ -33,7 +33,7 @@ type Domain struct {
 var (
 	// How often to check domains
 	checkRate = 12 * time.Hour
-	formats = []string{
+	formats   = []string{
 		"2006-01-02",
 	}
 	configFile = kingpin.Flag("config", "Domain exporter configuration file.").Default("domains.json").String()
@@ -54,9 +54,9 @@ var (
 		[]string{"domain"},
 	)
 	// we initialize our Domains array
-    domains Domains
+	domains Domains
 
-	version  = "0.0.1"
+	version = "0.0.1"
 )
 
 func main() {

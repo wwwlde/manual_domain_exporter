@@ -1,0 +1,112 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: domain-exporter
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  namespace: domain-exporter
+  name: domain-exporter-config
+  labels:
+    app: domain-exporter
+data:
+  domains.json: |-
+    {
+      "domains": [
+        {
+          "name": "example.tj",
+          "expire": "2024-07-11"
+        },
+        {
+          "name": "example.kz",
+          "expire": "2024-01-03"
+        }
+      ]
+    }
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manual-domain-exporter
+  namespace: domain-exporter
+  annotations:
+    configmap.reloader.stakater.com/reload: "domain-exporter-config"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: manual-domain-exporter
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 1
+  minReadySeconds: 5
+  template:
+    metadata:
+      labels:
+        app: manual-domain-exporter
+    spec:
+      containers:
+      - name: manual-domain-exporter
+        image: wwwlde/manual_domain_exporter:v0.0.2
+        ports:
+          - containerPort: 9203
+            protocol: TCP
+            name: domain-exporter
+        args: [
+          "--config=/etc/domain-exporter/domains.json",
+          "--bind=:9203",
+          "--log.level=info",
+        ]
+        imagePullPolicy: Always
+        volumeMounts:
+        - name: config
+          mountPath: /etc/domain-exporter/domains.json
+          subPath: domains.json
+          readOnly: true
+      volumes:
+      - name: config
+        configMap:
+          defaultMode: 0600
+          name: domain-exporter-config
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  namespace: domain-exporter
+  name: manual-domain-exporter
+  annotations:
+    prometheus.io/port: "9203"
+    prometheus.io/scrape: "true"
+  labels:
+    app: manual-domain-exporter
+spec:
+  type: ClusterIP
+  ports:
+  - port: 9203
+    targetPort: 9203
+    protocol: TCP
+    name: domain-exporter
+  selector:
+    app: manual-domain-exporter
+
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  namespace: domain-exporter
+  name: manual-domain-exporter
+  labels:
+    env: production
+spec:
+  selector:
+    matchLabels:
+      app: manual-domain-exporter
+  endpoints:
+  - port: domain-exporter
+    path: /metrics

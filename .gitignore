@@ -1,0 +1,8 @@
+vendor
+bin
+debug
+*.json
+
+Manifest
+.idea
+manual_smartctl_exporter
